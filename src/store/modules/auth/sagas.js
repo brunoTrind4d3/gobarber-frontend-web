@@ -12,18 +12,38 @@ export function* signIn({ payload }) {
       email,
       password,
     });
-
     const { token, user } = response.data;
+
     if (!user.provider) {
       toast.error('Usuário não é prestador');
       return;
     }
+
+    api.defaults.headers.Authorization = `Bearer ${token}`;
+
     yield put(signInSuccess(token, user));
+
     history.push('/dashboard');
   } catch (err) {
-    toast.error('Falha na é autenticação, verifique seus dados');
-    yield put(signFailure);
+    toast.error('Falha na autenticação, verifique seus dados');
+    yield put(signFailure());
   }
 }
 
-export default all([takeLatest('@auth/SIGN_IN_REQUEST', signIn)]);
+export function* signUp({ payload }) {
+  try {
+    const { name, email, password } = payload;
+
+    yield call(api.post, 'users', { name, email, password, provider: true });
+    history.push('/');
+    toast.success('Sucesso ao cadastrar.');
+  } catch (err) {
+    toast.error('Falha no cadastro, verifique seus dados');
+    yield put(signFailure());
+  }
+}
+
+export default all([
+  takeLatest('@auth/SIGN_IN_REQUEST', signIn),
+  takeLatest('@auth/SIGN_UP_REQUEST', signUp),
+]);
